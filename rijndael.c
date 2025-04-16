@@ -204,3 +204,62 @@ void invert_mix_columns(unsigned char *block) {
                          multiply_by_nine(temp[2]) ^ multiply_by_fourteen(temp[3]);
     }
 }
+
+ /*
+  * This operation is shared between encryption and decryption
+  */
+  void add_round_key(unsigned char *block, unsigned char *round_key) {
+    for (int i = 0; i < BLOCK_SIZE; i++) {
+        block[i] ^= round_key[i];
+    }
+}
+
+/*
+ * Key expansion function to generate round keys
+ * Takes a 16-byte key and expands it to 11 round keys (176 bytes)
+ */
+unsigned char *expand_key(unsigned char *cipher_key) {
+    // Allocate memory for expanded key (11 round keys, 16 bytes each)
+    unsigned char *expanded_key = (unsigned char *)malloc(BLOCK_SIZE * (NR + 1));
+    if (expanded_key == NULL) {
+        return NULL;
+    }
+    
+    // First round key is the original key
+    memcpy(expanded_key, cipher_key, BLOCK_SIZE);
+    
+    // Temporary storage for the word being processed
+    unsigned char temp[4];
+    
+    // Generate the remaining round keys
+    for (int i = 4; i < 4 * (NR + 1); i++) {
+        // Copy previous word
+        for (int j = 0; j < 4; j++) {
+            temp[j] = expanded_key[(i - 1) * 4 + j];
+        }
+        
+        if (i % 4 == 0) {
+            // Rotate word (circular left shift)
+            unsigned char temp_byte = temp[0];
+            temp[0] = temp[1];
+            temp[1] = temp[2];
+            temp[2] = temp[3];
+            temp[3] = temp_byte;
+            
+            // Apply S-box to all bytes in word
+            for (int j = 0; j < 4; j++) {
+                temp[j] = s_box[temp[j]];
+            }
+            
+            // XOR with round constant
+            temp[0] ^= r_con[i / 4];
+        }
+        
+        // XOR with the word 4 positions earlier
+        for (int j = 0; j < 4; j++) {
+            expanded_key[i * 4 + j] = expanded_key[(i - 4) * 4 + j] ^ temp[j];
+        }
+    }
+    
+    return expanded_key;
+}
