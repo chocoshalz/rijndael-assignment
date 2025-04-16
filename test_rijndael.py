@@ -146,3 +146,6 @@ class TestAESImplementation(unittest.TestCase):
             
             # Verify we got back to the original plaintext
             self.assertEqual(c_decrypted, plaintext)
+
+if __name__ == '__main__':
+    unittest.main()
