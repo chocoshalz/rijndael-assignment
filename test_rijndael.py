@@ -81,3 +81,29 @@ class TestAESImplementation(unittest.TestCase):
                 self.assertEqual(c_result, py_result)
         else:
             print("shift_rows not exposed for testing")
+
+    def test_mix_columns(self):
+        """Test the MixColumns operation."""
+        if hasattr(rijndael, 'mix_columns'):
+            rijndael.mix_columns.argtypes = [ctypes.POINTER(ctypes.c_ubyte)]
+            
+            for _ in range(3):  # Test with 3 random inputs
+                # Create random data
+                data = self.generate_random_data()
+                
+                # Create C array for input
+                c_data = (ctypes.c_ubyte * 16)(*data)
+                
+                # Create Python state matrix and apply operation
+                py_state = [list(data[i:i+4]) for i in range(0, len(data), 4)]
+                mix_columns(py_state)
+                py_result = bytes(sum(py_state, []))
+                
+                # Apply C operation
+                rijndael.mix_columns(c_data)
+                c_result = bytes(c_data)
+                
+                # Compare results
+                self.assertEqual(c_result, py_result)
+        else:
+            print("mix_columns not exposed for testing")
