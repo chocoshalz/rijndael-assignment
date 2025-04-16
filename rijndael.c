@@ -107,3 +107,21 @@ void shift_rows(unsigned char *block) {
     block[7] = block[3];
     block[3] = temp;
 }
+
+void mix_columns(unsigned char *block) {
+  unsigned char temp[4];
+  
+  for (int i = 0; i < 4; i++) {
+      int col = i * 4;
+      temp[0] = block[col];
+      temp[1] = block[col + 1];
+      temp[2] = block[col + 2];
+      temp[3] = block[col + 3];
+      
+      // Perform matrix multiplication in GF(2^8)
+      block[col] = xtime(temp[0]) ^ multiply_by_three(temp[1]) ^ temp[2] ^ temp[3];
+      block[col + 1] = temp[0] ^ xtime(temp[1]) ^ multiply_by_three(temp[2]) ^ temp[3];
+      block[col + 2] = temp[0] ^ temp[1] ^ xtime(temp[2]) ^ multiply_by_three(temp[3]);
+      block[col + 3] = multiply_by_three(temp[0]) ^ temp[1] ^ temp[2] ^ xtime(temp[3]);
+  }
+}
