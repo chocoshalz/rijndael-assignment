@@ -107,3 +107,42 @@ class TestAESImplementation(unittest.TestCase):
                 self.assertEqual(c_result, py_result)
         else:
             print("mix_columns not exposed for testing")
+
+    
+    def test_full_encryption_decryption(self):
+        """Test the full encryption and decryption process."""
+        for _ in range(3):  # Test with 3 random inputs
+            # Generate random plaintext and key
+            plaintext = self.generate_random_data()
+            key = self.generate_random_data()
+            
+            # Create C arrays
+            c_plaintext = (ctypes.c_ubyte * 16)(*plaintext)
+            c_key = (ctypes.c_ubyte * 16)(*key)
+            
+            # Encrypt with Python
+            py_aes = AES(key)
+            py_ciphertext = py_aes.encrypt_block(plaintext)
+            
+            # Encrypt with C
+            c_ciphertext_ptr = rijndael.aes_encrypt_block(c_plaintext, c_key)
+            c_ciphertext = bytes(c_ciphertext_ptr[i] for i in range(16))
+            
+            # Compare encryption results
+            self.assertEqual(c_ciphertext, py_ciphertext)
+            
+            # Create C array for ciphertext for decryption
+            c_encrypted = (ctypes.c_ubyte * 16)(*c_ciphertext)
+            
+            # Decrypt with Python
+            py_decrypted = py_aes.decrypt_block(py_ciphertext)
+            
+            # Decrypt with C
+            c_decrypted_ptr = rijndael.aes_decrypt_block(c_encrypted, c_key)
+            c_decrypted = bytes(c_decrypted_ptr[i] for i in range(16))
+            
+            # Compare decryption results
+            self.assertEqual(c_decrypted, py_decrypted)
+            
+            # Verify we got back to the original plaintext
+            self.assertEqual(c_decrypted, plaintext)
