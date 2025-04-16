@@ -125,3 +125,82 @@ void mix_columns(unsigned char *block) {
       block[col + 3] = multiply_by_three(temp[0]) ^ temp[1] ^ temp[2] ^ xtime(temp[3]);
   }
 }
+
+ /*
+  * Operations used when decrypting a block
+  */
+  void invert_sub_bytes(unsigned char *block) {
+    for (int i = 0; i < BLOCK_SIZE; i++) {
+        block[i] = inv_s_box[block[i]];
+    }
+}
+
+void invert_shift_rows(unsigned char *block) {
+    unsigned char temp;
+    
+    // Row 1: Shift right by 1
+    temp = block[13];
+    block[13] = block[9];
+    block[9] = block[5];
+    block[5] = block[1];
+    block[1] = temp;
+    
+    // Row 2: Shift right by 2
+    temp = block[2];
+    block[2] = block[10];
+    block[10] = temp;
+    temp = block[6];
+    block[6] = block[14];
+    block[14] = temp;
+    
+    // Row 3: Shift right by 3 (or left by 1)
+    temp = block[3];
+    block[3] = block[7];
+    block[7] = block[11];
+    block[11] = block[15];
+    block[15] = temp;
+}
+
+/*
+ * Helper functions for inverse mix columns
+ */
+static unsigned char multiply_by_nine(unsigned char x) {
+    return xtime(xtime(xtime(x))) ^ x;
+}
+
+static unsigned char multiply_by_eleven(unsigned char x) {
+    return xtime(xtime(xtime(x))) ^ xtime(x) ^ x;
+}
+
+static unsigned char multiply_by_thirteen(unsigned char x) {
+    return xtime(xtime(xtime(x))) ^ xtime(xtime(x)) ^ x;
+}
+
+static unsigned char multiply_by_fourteen(unsigned char x) {
+    return xtime(xtime(xtime(x))) ^ xtime(xtime(x)) ^ xtime(x);
+}
+
+void invert_mix_columns(unsigned char *block) {
+    unsigned char temp[4];
+    
+    for (int i = 0; i < 4; i++) {
+        int col = i * 4;
+        temp[0] = block[col];
+        temp[1] = block[col + 1];
+        temp[2] = block[col + 2];
+        temp[3] = block[col + 3];
+        
+        // Perform matrix multiplication with inverse matrix in GF(2^8)
+        block[col] = multiply_by_fourteen(temp[0]) ^ multiply_by_eleven(temp[1]) ^ 
+                     multiply_by_thirteen(temp[2]) ^ multiply_by_nine(temp[3]);
+                     
+        block[col + 1] = multiply_by_nine(temp[0]) ^ multiply_by_fourteen(temp[1]) ^ 
+                         multiply_by_eleven(temp[2]) ^ multiply_by_thirteen(temp[3]);
+                         
+        block[col + 2] = multiply_by_thirteen(temp[0]) ^ multiply_by_nine(temp[1]) ^ 
+                         multiply_by_fourteen(temp[2]) ^ multiply_by_eleven(temp[3]);
+                         
+        block[col + 3] = multiply_by_eleven(temp[0]) ^ multiply_by_thirteen(temp[1]) ^ 
+                         multiply_by_nine(temp[2]) ^ multiply_by_fourteen(temp[3]);
+    }
+}
