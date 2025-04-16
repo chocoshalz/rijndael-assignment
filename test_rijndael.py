@@ -55,3 +55,29 @@ class TestAESImplementation(unittest.TestCase):
                 self.assertEqual(c_result, py_result)
         else:
             print("sub_bytes not exposed for testing")
+
+    def test_shift_rows(self):
+        """Test the ShiftRows operation."""
+        if hasattr(rijndael, 'shift_rows'):
+            rijndael.shift_rows.argtypes = [ctypes.POINTER(ctypes.c_ubyte)]
+            
+            for _ in range(3):  # Test with 3 random inputs
+                # Create random data
+                data = self.generate_random_data()
+                
+                # Create C array for input
+                c_data = (ctypes.c_ubyte * 16)(*data)
+                
+                # Create Python state matrix and apply operation
+                py_state = [list(data[i:i+4]) for i in range(0, len(data), 4)]
+                shift_rows(py_state)
+                py_result = bytes(sum(py_state, []))
+                
+                # Apply C operation
+                rijndael.shift_rows(c_data)
+                c_result = bytes(c_data)
+                
+                # Compare results
+                self.assertEqual(c_result, py_result)
+        else:
+            print("shift_rows not exposed for testing")
