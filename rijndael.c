@@ -263,3 +263,85 @@ unsigned char *expand_key(unsigned char *cipher_key) {
     
     return expanded_key;
 }
+
+ /*
+  * Encryption function implementation
+  */
+  unsigned char *aes_encrypt_block(unsigned char *plaintext, unsigned char *key) {
+    unsigned char *output = (unsigned char *)malloc(BLOCK_SIZE);
+    if (output == NULL) {
+        return NULL;
+    }
+    
+    // Copy plaintext to output to avoid modifying the original
+    memcpy(output, plaintext, BLOCK_SIZE);
+    
+    // Expand the key to get round keys
+    unsigned char *expanded_key = expand_key(key);
+    if (expanded_key == NULL) {
+        free(output);
+        return NULL;
+    }
+    
+    // Initial round key addition
+    add_round_key(output, expanded_key);
+    
+    // Main rounds
+    for (int round = 1; round < NR; round++) {
+        sub_bytes(output);
+        shift_rows(output);
+        mix_columns(output);
+        add_round_key(output, expanded_key + (round * BLOCK_SIZE));
+    }
+    
+    // Final round (no mix columns)
+    sub_bytes(output);
+    shift_rows(output);
+    add_round_key(output, expanded_key + (NR * BLOCK_SIZE));
+    
+    // Free the expanded key
+    free(expanded_key);
+    
+    return output;
+}
+
+/*
+ * Decryption function implementation
+ */
+unsigned char *aes_decrypt_block(unsigned char *ciphertext, unsigned char *key) {
+    unsigned char *output = (unsigned char *)malloc(BLOCK_SIZE);
+    if (output == NULL) {
+        return NULL;
+    }
+    
+    // Copy ciphertext to output to avoid modifying the original
+    memcpy(output, ciphertext, BLOCK_SIZE);
+    
+    // Expand the key to get round keys
+    unsigned char *expanded_key = expand_key(key);
+    if (expanded_key == NULL) {
+        free(output);
+        return NULL;
+    }
+    
+    // Initial round
+    add_round_key(output, expanded_key + (NR * BLOCK_SIZE));
+    invert_shift_rows(output);
+    invert_sub_bytes(output);
+    
+    // Main rounds
+    for (int round = NR - 1; round > 0; round--) {
+        add_round_key(output, expanded_key + (round * BLOCK_SIZE));
+        invert_mix_columns(output);
+        invert_shift_rows(output);
+        invert_sub_bytes(output);
+    }
+    
+    // Final round
+    add_round_key(output, expanded_key);
+    
+    // Free the expanded key
+    free(expanded_key);
+    
+    return output;
+}
