@@ -72,3 +72,38 @@
  static unsigned char multiply_by_three(unsigned char x) {
      return xtime(x) ^ x;
  }
+ 
+ /*
+  * Operations used when encrypting a block
+  */
+  void sub_bytes(unsigned char *block) {
+    for (int i = 0; i < BLOCK_SIZE; i++) {
+        block[i] = s_box[block[i]];
+    }
+}
+
+void shift_rows(unsigned char *block) {
+    unsigned char temp;
+    
+    // Row 1: Shift left by 1
+    temp = block[1];
+    block[1] = block[5];
+    block[5] = block[9];
+    block[9] = block[13];
+    block[13] = temp;
+    
+    // Row 2: Shift left by 2
+    temp = block[2];
+    block[2] = block[10];
+    block[10] = temp;
+    temp = block[6];
+    block[6] = block[14];
+    block[14] = temp;
+    
+    // Row 3: Shift left by 3 (or right by 1)
+    temp = block[15];
+    block[15] = block[11];
+    block[11] = block[7];
+    block[7] = block[3];
+    block[3] = temp;
+}
